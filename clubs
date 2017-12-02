@@ -1,0 +1,114 @@
+#! /usr/local/bin/perl
+
+#
+# This code is in the public domain.
+# Author: Giles Lean, December 2017.
+#
+
+use strict;
+use feature 'unicode_strings';
+
+use Getopt::Std qw(getopts);
+use JSON::PP qw(decode_json);
+use LWP::UserAgent;
+
+sub ds
+{
+    my ($left, $right) = ($a, $b);
+    $left =~ s/^The\s+//i;
+    $right =~ s/^The\s+//i;
+
+    return $left cmp $right;
+}
+
+my $Progname = "clubs";
+our($opt_D, $opt_v);
+
+if (not binmode(STDOUT, ":utf8")) {
+    die "$Progname: unable to turn on utf8 for STDOUT: $!\n";
+}
+
+#
+# Main
+#
+
+if (not getopts("Dv")) {
+    die "usage: $Progname [-D] [-v] member ...\n";
+}
+
+my $status = 0;
+
+my $ua = LWP::UserAgent->new;
+
+#
+# XXX chess.com recommend putting contact details into the User-Agent string.
+#
+#$ua->agent('@skelos/0.10');
+
+#
+# Iterate over @ARGV, although I'm not sure that's a sensible usage.
+# It does, however, follow the Unix tools' pattern, so let's do it.
+#
+ARG:
+for my $arg (@ARGV) {
+    # Strip a leading '@' if one is provided (V3 style naming)
+    $arg =~ s/^\@//;
+
+    # Don't allow anything but alphanumeric characters, '_' and '-'.
+    if ($arg !~ /[\w_-]+/) {
+        warn "$Progname: disallowed character in \"$arg\", skipping\n";
+        $status = 1;
+        next ARG;
+    }
+
+    my $req =
+        HTTP::Request->new(
+            GET => "https://api.chess.com/pub/player/$arg/clubs"
+        );
+
+    my $res = $ua->request($req);
+
+    if ($res->is_success) {
+        my $data = decode_json($res->content);
+        my $endpoints = $$data{clubs};
+        my @clubs;
+        my %url_ID;
+        for my $endpoint (@$endpoints) {
+            if (defined $opt_D) {
+                print STDERR "Fetching $endpoint\n";
+            }
+            $req = HTTP::Request->new(GET => $endpoint);
+            $res = $ua->request($req);
+            if ($res->is_success) {
+                $data = decode_json($res->content);
+                if (defined $opt_D) {
+                    print STDERR "Received $$data{name}\n";
+                }
+                push(@clubs, $$data{name});
+                if (defined $opt_v) {
+                    $endpoint =~ s,.*/,,;
+                    $url_ID{$$data{name}} = $endpoint;
+                }
+            } else {
+                $status = 1;
+                warn "$Progname: $endpoint: ", $res->status_line, "\n";
+            }
+        }
+
+        # Would use join() here but it's awkward for $opt_v
+        for my $club (sort ds @clubs) {
+            print $club;
+            if (defined $opt_v) {
+                print " ($url_ID{$club})";
+            }
+            print "\n"
+        }
+    } else {
+        $status = 1;
+        warn "$Progname: https://api.chess.com/pub/player/$arg/clubs: ", $res->status_line, "\n";
+    }
+}
+
+exit $status;
+
+# eof

@@ -1,0 +1,38 @@
+#! /usr/local/bin/perl
+
+use strict;
+use feature 'unicode_strings';
+
+use Data::Dumper;
+use JSON::PP;
+use LWP::UserAgent;
+
+my $Progname = "lwp-dump";
+
+if (not binmode(STDOUT, ":utf8")) {
+    die "$Progname: unable to turn on utf8 for STDOUT: $!\n";
+}
+
+my $ua = LWP::UserAgent->new;
+
+#
+# XXX chess.com recommend putting contact details into the User-Agent string.
+#
+#$ua->agent('@skelos/0.10');
+
+my $req = HTTP::Request->new(GET => $ARGV[0]);
+my $res = $ua->request($req);
+
+my $status = 0;
+if ($res->is_success) {
+    print Dumper(decode_json($res->content)), "\n";
+} else {
+    $status = 1;
+    print $res->status_line, "\n";
+    # For 403/404 errors at least there is often HTML content
+    print $res->content, "\n";
+}
+
+exit $status;
+
+# eof

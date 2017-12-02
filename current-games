@@ -1,0 +1,52 @@
+#! /usr/local/bin/perl
+
+#
+# This code is in the public domain.
+# Author: Giles Lean, December 2017.
+#
+
+use strict;
+use feature 'unicode_strings';
+
+use JSON::PP;
+use LWP::UserAgent;
+
+my $Progname = "current_games";
+
+if (not binmode(STDOUT, ":utf8")) {
+    die "$Progname: unable to set STDOUT to utf8 mode: $!\n";
+}
+
+my $ua = LWP::UserAgent->new;
+
+#
+# XXX chess.com recommend putting contact details into the User-Agent string.
+#
+#$ua->agent('@skelos/0.10');
+
+my $req = HTTP::Request->new(
+	GET => "https://api.chess.com/pub/player/$ARGV[0]/games");
+my $res = $ua->request($req);
+
+my $status = 0;
+if ($res->is_success) {
+    my $data = decode_json($res->content);
+    my $game_data = %$data{'games'};
+    for my $ref (@$game_data) {
+	print $$ref{'pgn'}, "\n\n";
+    }
+} else {
+    $status = 1;
+    warn("$Progname: https://api.chess.com/pub/player/$ARGV[0]/games: ",
+         $res->status_line, "\n");
+
+    #
+    # Possibly print $res->content anyway, as at least 403/404 errors
+    # are often accompanied by a HTML explanation.
+    #
+    # print $res->content, "\n";
+}
+
+exit $status;
+
+# eof

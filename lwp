@@ -1,0 +1,45 @@
+#! /usr/local/bin/perl
+
+#
+# This code is in the public domain.
+# Author: Giles Lean, December 2017.
+#
+
+use strict;
+use feature 'unicode_strings';
+
+use LWP::UserAgent;
+
+my $Progname = "lwp";
+
+if (not binmode(STDOUT, ":utf8")) {
+    die "$Progname: unable to turn on utf8 for STDOUT: $!\n";
+}
+
+my $ua = LWP::UserAgent->new;
+
+#
+# XXX chess.com recommend putting contact details into the User-Agent string.
+#
+#$ua->agent('@skelos/0.10');
+
+my $req = HTTP::Request->new(GET => $ARGV[0]);
+my $res = $ua->request($req);
+
+my $status = 0;
+if ($res->is_success) {
+    print $res->content;
+} else {
+    $status = 1;
+    warn "Progname: $ARGV[0]: ", $res->status_line, "\n";
+
+    #
+    # For 403/404 errors at least there is often HTML content;
+    # printing it can be useful for debugging.
+    #
+    # print $res->content, "\n";
+}
+
+exit $status;
+
+# eof
