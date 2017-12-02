@@ -20,7 +20,7 @@ Similar to lwp, but will print some headers. Useful for debugging.
 ## lwp-dump
 
 Similar to lwp, but will use Perl's JSON::PP and Data::Dumper to
-display the JSON data as it has unpacked to perl hashes and arrays
+display the JSON data as it has unpacked to perl hashes and arrays.
 
 # Example Programs
 ## clubs
