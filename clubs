@@ -10,6 +10,7 @@ use feature 'unicode_strings';
 
 use Getopt::Std qw(getopts);
 use JSON::PP qw(decode_json);
+use LWP::ConnCache;
 use LWP::UserAgent;
 
 sub ds
@@ -44,6 +45,12 @@ my $ua = LWP::UserAgent->new;
 # XXX chess.com recommend putting contact details into the User-Agent string.
 #
 #$ua->agent('@skelos/0.10');
+
+#
+# Cache the SSL connection once made to avoid SSL negotiation
+# for each club endpoint.
+#
+$ua->conn_cache(LWP::ConnCache->new());
 
 #
 # Iterate over @ARGV, although I'm not sure that's a sensible usage.

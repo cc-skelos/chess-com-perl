@@ -28,6 +28,8 @@ display the JSON data as it has unpacked to perl hashes and arrays.
 Downloads a list of a player's clubs and sorts and displays the human
 readable names. Takes some seconds to run due to accessing each club's
 endpoint as well as the player's club list.
+It is made faster by using LWP::ConnCache to use a single SSL connection
+for multiple (but not parallel, per chess.com's requirements) requests.
 
 ## current-games
 
